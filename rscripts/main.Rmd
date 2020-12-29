@@ -1,0 +1,191 @@
+---
+title: "Eukaryotes"
+author: "Michel de Lange"
+date: "28/12/2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, WARNING=F, message = F, warning = F)
+ 
+library(kableExtra)
+library(flextable)
+library(magrittr)
+```
+
+## R Markdown
+
+## Method
+
+We start with 142 samples: 55 at Lake Terrasovoje, 64 at Mawson Escarpment; 23 at Mount Menzies. There were 25 phyla present in the samples. For each phylum, I determined whether it is present in each sample. I present a table of the number samples containing each phylum, by location.
+For those phyla, which are present or absent in at least 12 samples, I then fitted a LASSO logistic regression. The response variable is presence of the phylum, and the predictors are the variables regarding the soil. I present the active set (variables not set to zero) by the LASSO. I then repeated the regression on 1000 bootstrap samples, and I calculated the number of times each variable is estimated to be non-zero. I also calculated 95% Confidence intervals of these non-parametric bootrap estimates. I did not adjust for multiple comparisons. All analysis was done in R version 4.0.2, with the glmnet package.
+
+We need to bear in mind that our sample size is small for the number of predictors, so we lack statistical power, and indeed, we do not have many significant results.
+
+
+
+## Presences
+
+
+The following table shows the number of samples with each phylum present, by site.
+
+```{r }
+load(file='../rdata/allstats.rdata')
+
+
+n <- length(all.stats)
+p.table <- matrix(nrow=n, ncol=3)
+
+
+
+all.phyla <- vector()
+for (i in 1:n) {
+  p <- all.stats[[i]]$presence.table[2,]
+  p.table[i,] <- p
+  all.phyla[i] <- all.stats[[i]]$phylum
+}
+rownames(p.table) <- all.phyla
+colnames(p.table) <- LOCATIONS
+knitr::kable(p.table)  %>%
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+
+```
+<br>
+
+\newpage
+
+## Estimates from LASSO logistic regression.
+
+The following table shows which variables were included in the LASSO logistic regression, and their signs
+
+
+```{r }
+rnames <- vector()
+phs <- vector()
+df.b <- NULL
+counter <- 0
+#for (i in 1:n) {
+for (i in 1:length(all.stats)) {
+  print(i)
+  b <- all.stats[[i]]$beta
+  if (!is.null(b)) {
+    counter <- counter + 1
+    rnames[counter] <- all.stats[[i]]$phylum
+    m <- length(rownames(b))
+    ch <- rep('',m) 
+    ch[which(as.vector(b) > 0)] <- "+"
+    ch[which(as.vector(b) < 0)] <- "-"
+    if (counter == 1) {
+      df.b <- ch  
+    } else {
+      df.b <- rbind(df.b,ch)
+    }
+  }
+}
+
+df.b2 <- data.frame(df.b)
+
+colnames(df.b2) <- rownames(all.stats[[3]]$beta)
+rownames(df.b2) <- rnames
+
+df.b2 <- cbind(rnames,df.b2) 
+colnames(df.b2)[1] <- 'Phylum'
+
+df.b2[,"(Intercept)"] <- NULL
+del <- which(rownames(df.b2)=="no hit, reference, or complete taxonomy string")
+if (length(del)>0) df.b2 <- df.b2[-del,]
+
+
+#df.b2
+
+df.b2 %>% regulartable() %>% autofit() %>% 
+  width(j=~POTA,width=1) %>% 
+  align( align = "center", part = "all") %>% 
+  align( align = "left", j = 1) 
+ 
+```
+
+<br>
+
+We now look at at each phylum individually. There are two graphs for each phylum. The first shows the proportion of bootstrap samples with non-zero estimates. We would like there to some predictors where this proportion is close to one. The second graph shows the confidence intervals, which should not include zero for a significant predictor.
+
+
+### Arthropoda
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Arthropoda.bmp)
+
+We see that Micas and Feldspar are important. The sign is negative for Micas, and positive for Feldspar, but neither is significant at the 95% level.
+
+
+### Ascomycota
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Ascomycota.bmp)
+
+Ascomycota appear to dislike PH and Menzies, but neither of these factors are significant.
+
+### Bacillariophyta
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Bacillariophyta.bmp)
+
+Bacillariophyta do not like slope, micas nor garnets, but again none of the predictors are significant.
+
+### Basidiomycota
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Basidiomycota.bmp)
+
+Basidiomycota do not like PH, and this is statistically significant. They appear to like dolomite, which would be significant at the 90% level
+
+### Cercozoa
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Cercozoa.bmp)
+
+Nothing stands out
+
+### Chlorophyta
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Chlorophyta.bmp)
+
+Chlorophyta do not like PH nor Menzies, and both of these are signficant.
+
+### Chytridiomycota
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Chytridiomycota.bmp)
+
+There are a lot of predictors, which seem important, but none are significant. RLU, PH, Menzies, garnets, conductivity and chlorite all stand out, and neither of them appear to be liked by Chytridiomycota. However, none of these are significant at 95%.   
+
+  
+### Ciliophora
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Ciliophora.bmp)
+
+Ciliophora do not like garnets, and this is significant. They also don't appear to like Menzies or Sulphur.
+
+
+### Nematoda
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Nematoda.bmp)
+
+Nematodes do not like Menzies, and this is significant. They also don't like conductivity, which is almost significant.
+
+### Rotifera
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Rotifera.bmp)
+
+Not much stands out, except that perhaps that Rotifera appear not so keen on potassium or calcium.
+
+### Streptophyta
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Streptophyta.bmp)
+
+Streptophyta appear not so keen on Kaolchlor, but this is not signficicant.
+
+### Tardigrada
+
+![](C:/Users/Michel/Documents/eukaryotes/images/barplots_bootstrap/boots2_Tardigrada.bmp)
+
+Tardigrades do not like Calcium, nor perhaps conductivity.
+
+ 
