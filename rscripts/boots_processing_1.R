@@ -5,18 +5,6 @@ dim(bm2)
 library(ggplot2)
 dim(bm2)
 
-# dat <- stack(as.data.frame(t(bm2)))
-# colnames(dat)[1] <- 'Estimates'
-# plot.est <-ggplot(dat) + 
-#   geom_boxplot(aes(x = ind, y = Estimates)) +
-#   coord_flip() + 
-#   scale_x_discrete(name='predictors',
-#                    labels=var.names) +
-#   ylab('LASSO estimate') +
-#   xlab('predictor') +
-#   labs(title = phylum, subtitle = "Bootstrap estimates")
-
-
 not.zero <- vector()
 for (i in 1:dim(bm2)[1]) {
   not.zero[i] <- length(which(bm2[i,] != 0))
@@ -26,12 +14,18 @@ not.zero
 
 df.prop <- data.frame(x=var.names,
                       y=not.zero)
+df.prop[which(df.prop$x=='Menzies'),'x'] <- 'MENZIES'
+df.prop[which(df.prop$x=='Mawson'),'x'] <- 'MAWSON'
 head(df.prop)
+# get the plot ordered alphabetically from top to bottom
+df.prop$x <- factor(df.prop$x)
+df.prop$x <- factor(df.prop$x,ordered=T,levels=rev(levels(df.prop$x)))
 
 my.color = 'deepskyblue4'
-
-plot.zeros <- ggplot(data=df.prop) + geom_col(aes(x=x,y=y),fill=my.color, colour=my.color) +
-  coord_flip() + 
+#reorder(position, desc(position))
+plot.zeros <- ggplot(data=df.prop) + 
+  geom_col(aes(x=x,y=y),fill=my.color, colour=my.color) +
+  coord_flip()   +
   geom_hline(yintercept=0.95,colour='red',linetype = "dashed") +
   ylab('Percentage of samples not zero') +
   xlab('') + 
@@ -48,6 +42,11 @@ for (i in 1:dim(bm2)[1]) {
 }
 d <- data.frame(varnames = var.names,lower=lower,upper=upper)
 
+#get the plot ordered alphabetically from top to bottom
+d$varnames[which(d$varnames=='Menzies')] <- 'MENZIES'
+d$varnames[which(d$varnames=='Mawson')] <- 'MAWSON'
+d$varnames <- factor(d$varnames)
+d$varnames <- factor(d$varnames,ordered=T,levels=rev(levels(d$varnames)))
 
 plot.ci <- ggplot(data=d) + geom_segment(aes(y=varnames,
                               yend=varnames,
@@ -70,7 +69,8 @@ cis <- data.frame(x=var.names,
 return(list(phylum = phylum,
             plot.zeros = plot.zeros,
             plot.ci = plot.ci,
-            cis = cis))
+            cis = cis,
+            df.prop = df.prop))
 
 }
 

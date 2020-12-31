@@ -69,7 +69,6 @@ df.b <- NULL
 counter <- 0
 #for (i in 1:n) {
 for (i in 1:length(all.stats)) {
-  print(i)
   b <- all.stats[[i]]$beta
   if (!is.null(b)) {
     counter <- counter + 1
@@ -100,6 +99,13 @@ if (length(del)>0) df.b2 <- df.b2[-del,]
 
 
 #df.b2
+library(officer)
+sect_properties <- prop_section(
+  page_size = page_size(orient = "landscape",
+    width = 8.3, height = 11.7),
+  type = "continuous",
+  page_margins = page_mar()
+)
 
 df.b2 %>% regulartable() %>% autofit() %>% 
   width(j=~POTA,width=1) %>% 

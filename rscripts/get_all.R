@@ -37,12 +37,7 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
     toofew <- TRUE
     print('too few or too many')
     result <- list(phylum = phylum,
-                   presence.table = presence.table,
-                   beta=beta,
-                   lasso.ci=lasso.ci,
-                   xg.acc=xg.acc,
-                   auc.test=auc.test,
-                   imp=imp)
+                   presence.table = presence.table)
   } else {
     
     s2 <- s
@@ -123,7 +118,7 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
 all.stats <- list()
 for (i in seq(1 , length(ph))) {
   print(paste(ph[i],Sys.time()))
-  all.stats[[i]] <- doStats(df=f,phylum=ph[i],n.boots=1000,do.boots=T)
+  all.stats[[i]] <- doStats(df=f,phylum=ph[i],n.boots=1000,do.boots=F)
 }
 save.image(file='../rdata/allstats.rdata')
 load(file='../rdata/allstats.rdata')

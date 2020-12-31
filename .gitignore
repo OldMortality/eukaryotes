@@ -3,3 +3,5 @@ images/
 rdata/
 old/
 documents/
+*.html
+*.htm
