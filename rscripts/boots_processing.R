@@ -6,9 +6,7 @@ library(gridExtra)
 
 setwd("C:/Users/Michel/Documents/eukaryotes/rscripts")
 source('boots_processing_1.R')
-load(file='varnames.RData')
-
-
+load(file='varnames.RData') 
 
 phyls <- c('Arthropoda',
             'Bacillariophyta',

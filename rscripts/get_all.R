@@ -26,11 +26,8 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
   print(phylum)
   beta=NULL
   lasso.ci=NULL
- 
   toofew <- FALSE
-  
   s <- getAllByPhylum(df=df,phylum=phylum)
-  #s <- getAllByPhylumSpecies(df=df,phylum=phylum,species='Mesobiotus furciger')
   
   presence.table <- table(s$distinct.otus>0,s$Location)
   if (sum(presence.table[2,]) < 12 | sum(presence.table[1,]) < 12 )  {
@@ -96,12 +93,11 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
         bm <- cbind(bm,e)
       }
     }
-    # class(bm)
     bm2 <- matrix(bm,nrow=dim(bm)[1],ncol=dim(bm)[2])
     rownames(bm2) <- var.names
+    # save for input in boots_processing.R, which makes the plots
     save(bm2,file=paste0('../boots/',phylum,'.RData'))
     
-  
    }
     
    
