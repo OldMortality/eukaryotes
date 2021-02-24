@@ -69,10 +69,8 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
   
     if (do.boots==T) {  
     
-    betas.matrix <- matrix(nrow=dim(x)[2],
-                       ncol=n.boots)
+    betas.matrix <- matrix(nrow=dim(x)[2],ncol=n.boots)
     
- 
     for (b in 1: n.boots) {
       if (b %% 100 == 1 ) print(b)
       ixb <- sample(1:dim(x)[1],replace=T)
@@ -99,7 +97,6 @@ doStats <- function(df,phylum,n.boots=1000,do.boots=F){
     save(bm2,file=paste0('../boots/',phylum,'.RData'))
     
    }
-    
    
    result <- list(phylum = phylum,
                    presence.table = presence.table,
