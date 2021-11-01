@@ -1,0 +1,44 @@
+---
+title: "Eukaryotes, read depth"
+author: "Michel de Lange"
+date: "01/11/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = F, message = F)
+load(file="after_loop.rdata")
+library(knitr)
+library(kableExtra)
+library(dplyr)
+```
+
+## Accumulation Curves within Samples.
+
+We want to establish whether the actual read depth was sufficient. Are we likely to have found more phyla if we had had more reads? In order to answer this question, I have done a set of simulations. Within each simulation, I have subsampled each Sample until the total number of observed phyla in the sample had been found. I then plotted one accumulation curve as an example, and I collected statistics of all accumulation curve: The number of OTUs that needed to be read before we observed all phyla in the sample. There is one such number for each of 1000 simulations for each sample. I then report the maximum of these 1000 numbers for each sample, and the 95% quantile. For example, if the 95% quantile for one sample was 5000, then we can be 95% sure that we would have found all observed phyla by reading 5000 OTUs. If this number is substantially below the actual number of sequences read, we can be confident that we have read a sufficient number of sequences.  
+
+I will only try another approach, but I haven't done this yet: Suppose we add an extra phylum to each sample, as one we have not observed, and suppose it is (?half as?) as abundant as the least abundant phylum in this sample. How likely are we to have observed this extra phylum within the actual number of OTUs read?
+
+
+```{r cars}
+results <- results[,c("Sample","n phyla","sample_abundance", "p95","Highest_Sim")]
+colnames(results)[which(colnames(results)=="Highest_Sim")] <- "p100" 
+colnames(results)[which(colnames(results)=="sample_abundance")] <- "Sample Abundance" 
+
+kable(results, longtable = T, booktabs  = T, caption   = "Longtable") %>%
+  kable_styling(latex_options = c("repeat_header"),
+              repeat_header_continued = "\\textit{(Continued on Next Page...)}")
+```
+
+* 'n phyla' is the number of phyla observed in the sample.
+* 'Sample abundance' is the total abundance for the sample.
+* p95 is the total abundance required so that we found all phyla in the sample 95% of the time.
+* p100 is the highest abundance required to find all phyla in the sample over all 1000 simulations.
+
+If p95 is well below the Sample Abundance, then this would give us confidence that the total read depth was sufficient. 
+
+## Appendix.
+
+![](report.pdf) 

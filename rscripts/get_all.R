@@ -17,6 +17,7 @@ getEst <- function(x,y) {
     m.lasso <- glmnet(x=x,y=y,lambda = best.lambda, family='binomial',alpha=1)
     return(m.lasso$beta)
 }
+z <- f[which(f$Sample=="18S.2.9.E.PCM.LT" & f$phylum=="Ascomycota"),]
 
  
 
