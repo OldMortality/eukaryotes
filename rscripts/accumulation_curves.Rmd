@@ -1,44 +1,89 @@
 ---
 title: "Eukaryotes, read depth"
 author: "Michel de Lange"
-date: "01/11/2021"
+date: "`r Sys.Date()`"
 output:
-  pdf_document: default
-  html_document: default
+  pdf_document 
+header-includes:
+  - \usepackage{pdfpages}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = F, message = F)
 load(file="after_loop.rdata")
+load(file="m.rdata")
+
 library(knitr)
 library(kableExtra)
 library(dplyr)
+library(ggplot2)
 ```
+
+
+
 
 ## Accumulation Curves within Samples.
 
-We want to establish whether the actual read depth was sufficient. Are we likely to have found more phyla if we had had more reads? In order to answer this question, I have done a set of simulations. Within each simulation, I have subsampled each Sample until the total number of observed phyla in the sample had been found. I then plotted one accumulation curve as an example, and I collected statistics of all accumulation curve: The number of OTUs that needed to be read before we observed all phyla in the sample. There is one such number for each of 1000 simulations for each sample. I then report the maximum of these 1000 numbers for each sample, and the 95% quantile. For example, if the 95% quantile for one sample was 5000, then we can be 95% sure that we would have found all observed phyla by reading 5000 OTUs. If this number is substantially below the actual number of sequences read, we can be confident that we have read a sufficient number of sequences.  
+We want to establish whether the actual read depth was sufficient. Are we likely to have found more phyla if we had had more reads? In order to answer this question, I have done a set of simulations, 1000 for each sample. Within each simulation, I have subsampled one sample until the total number of observed phyla in the sample had been found. I then plotted one accumulation curve as an example, and I collected statistics of all 1000 accumulation curves: The number of OTUs that needed to be read before we observed all phyla in the sample. There is one such number for each of 1000 simulations for each sample. I then report the maximum of these 1000 numbers for each sample, and the 95% quantile. For example, if the 95% quantile for one sample was 5000, then we can be 95% sure that we would have found all observed phyla by reading 5000 OTUs. If this number is substantially below the actual number of sequences read, we can be confident that we have read a sufficient number of sequences.  
 
-I will only try another approach, but I haven't done this yet: Suppose we add an extra phylum to each sample, as one we have not observed, and suppose it is (?half as?) as abundant as the least abundant phylum in this sample. How likely are we to have observed this extra phylum within the actual number of OTUs read?
+## Would we have seen a rare phylum with the given read depth?
+
+I have also used a second approach: Suppose we add an extra phylum to each sample, as one we have not observed, and suppose it is half as as abundant as the least abundant phylum in this sample. How likely are we to have observed this extra phylum within the actual number of OTUs read? For example, sample 18S.1.1.C.PCM.MM contains Arthropoda (abundance 1315) and Streptophyta (abundace 143). Suppose there had been a third unobserved phylum in proportion of half the Streptophyta, how many reads would be required so that we may expect to see it? If this is less than the actual read depth of the sample, then this would be an indication that the read depth was sufficient. We can find the expected number of reads required by viewing the problem as an absorbing Markov Chain. For example, for a situation with 5 phyla, the initial state would be "{0,0,0,0,0}" (no phyla seen), and the final state would be "{1,1,1,1,1}" (all phyla seen). We can write down the transition matrix from the observed proportions of the phyla, and then we have the expected number of transitions before reaching the absorbing state in closed form. 
+
+The following table shows the results. 
+
+```{r }
+m["low"] <- ifelse(m$mn<m$sample_abundance,'','*')
+m$mn <- round(m$mn)
+m <- m[,c("Sample","n phyla","sample_abundance", "p95","Highest_Sim","frac","mn","low" )]
+colnames(m)[which(colnames(m)=="Highest_Sim")] <- "p100" 
+colnames(m)[which(colnames(m)=="sample_abundance")] <- "Sample Abundance" 
+
+library(knitr)
+library(kableExtra)
 
 
-```{r cars}
-results <- results[,c("Sample","n phyla","sample_abundance", "p95","Highest_Sim")]
-colnames(results)[which(colnames(results)=="Highest_Sim")] <- "p100" 
-colnames(results)[which(colnames(results)=="sample_abundance")] <- "Sample Abundance" 
 
-kable(results, longtable = T, booktabs  = T, caption   = "Longtable") %>%
+
+
+kable(
+  m,
+  format="latex", 
+  longtable = T, 
+  booktabs  = T,
+  caption="Longtable") %>%
+  add_header_above(header=c("Observed"=3,"Simulation"=3,"Markov Chain"=2)) %>%
   kable_styling(latex_options = c("repeat_header"),
-              repeat_header_continued = "\\textit{(Continued on Next Page...)}")
+              repeat_header_continued = "\\textit{(Continued on Next Page...)}") 
 ```
 
-* 'n phyla' is the number of phyla observed in the sample.
-* 'Sample abundance' is the total abundance for the sample.
-* p95 is the total abundance required so that we found all phyla in the sample 95% of the time.
-* p100 is the highest abundance required to find all phyla in the sample over all 1000 simulations.
+* 'n phyla':The number of phyla observed in the sample.
+* Sample abundance: The total abundance for the sample.
+* p95: The total abundance required so that we found all phyla in the sample 95% of the time.
+* p100: The highest abundance required to find all phyla in the sample over all 1000 simulations.
+* frac: p95 divided by the sample abundance. For example, if this is 0.7, we can be 95% sure that we would have found all the phyla we did observe, with 70% of the actual read depth. 
+* mn: The expected of reads needed to observe an extra phylum, half as rare as the rarest phylum in the sample.
+* low: Shows an asterisk if mn is greater than the actual read depth. This shows that the read depth was not sufficient in this case to detect to hypothetical, rare, extra phylum.
 
-If p95 is well below the Sample Abundance, then this would give us confidence that the total read depth was sufficient. 
 
-## Appendix.
+If p95 is well below the Sample Abundance, then this would give us confidence that the total read depth was sufficient. Leaving out those samples where there is only only phylum, where clearly there is no point in making an accumulation curve, we see that this number is below 0.8 for all samples. In other words, we did not discover any new phyla beyond 80% of the actual read depth in any of our samples, in 95% of the simulations. It seems to be reasonable to conclude that our read depth was sufficient. 
 
-![](report.pdf) 
+````{r }
+g <- ggplot(data=results) + geom_histogram(aes(x=frac),fill='steelblue') +
+  ggtitle("Required read depth as fraction of actual read depth")
+g
+```
+
+Required read depth here is the number of OTUs which was needed in 95% of the simulations to observe all the phyla actually observed in the sample.
+
+
+For the second approach, we see that there are 8 samples in which we would missed the hypothetical rare phlyum. In each of these samples, there is an observed phylum with a only 2 OTS's observed, so that the extra phylum would have only 1 OTU, and we are missing something very rare indeed. This can never be entirely avoided.
+
+All in all, I think it is reasonable to assume that the actual read depth was sufficient. A limitation is that we have assumed sampling is random. In reality, OTUs of the same kind probably cluster together, but we have no way of modeling this, and this is the best we can do.
+
+
+
+
+## Appendix: Accumulation Curves: One example and 1000 simulations for each Sample in the Dataset.
+
+\includepdf[pages=-,pagecommand={}]{report.pdf}

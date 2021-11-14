@@ -137,7 +137,120 @@ results$p95 <- ceiling(as.numeric(results$p95))
 results$`n phyla` <- as.numeric(results$`n phyla`)
 results$sample_abundance <- as.numeric(results$sample_abundance)
 results$Highest_Sim <- as.numeric(results$Highest_Sim)
-results
-save.image(file="after_loop.rdata")
+results <- results[-which(results$`n phyla`==1),]
+results$frac <- round(results$p95 / results$sample_abundance,2)
 
-results
+#save.image(file="after_loop.rdata")
+#load(file="after_loop.rdata")
+
+
+####
+#### Absorbing Markov Chain Approach
+####
+
+library(binaryLogic)
+
+
+new_ph <- function(x,y,p,N) {
+  result <- 0
+  #print(paste(x,y))
+  if (x==y) return(NA) 
+  b1 <- as.numeric(as.character(as.binary(x-1,n = N)))
+  b2 <- as.numeric(as.character(as.binary(y-1,n = N)))
+  if ( ( sum(b2) == sum(b1) + 1 ) && (length(which(b1!=b2)) == 1)  && (b2[which(b1!=b2)]==1) ) {
+    result <- p[which(b1!=b2)]
+  }
+  return(result)
+}
+
+
+
+
+calcStats <- function(sampleId, p) {
+  N <- length(p) # number of phyla
+  T <- matrix(0,nrow=2^N,ncol=2^N)
+  for (i in seq(1,2^N-1)) {
+    T[i,i] <- sum(p * as.numeric(as.character(as.binary(i-1,n = N)))) 
+  }
+  T[2^N,2^N] <- 1
+  
+  for (i in seq(1,2^N-1)) {
+    for (j in seq(i + 1,2^N)) {
+      if (i != j) {
+        T[j,i] <- new_ph(x=i,y=j,p=p,N=N)  
+      }
+      
+    }
+  }
+  T
+  
+  Q <- t(T[1:2^N-1,1:2^N-1])
+  I <- matrix(0,nrow=2^N-1,ncol=2^N-1)
+  for (i in 1:2^N-1) {
+    I[i,i] <- 1
+  }
+  
+  M <- solve(I-Q)
+  one_vector <- matrix(1,nrow=2^N-1,ncol=1) 
+  # expected number of steps
+  mn <- M %*% one_vector
+  # variance of the expected number of steps
+  s <- (2 *  M - I ) %*% mn - mn * mn
+  ## initial state is 1
+  mn <- mn[1,1]
+  s <- s[1,1]
+  return(list(mn = mn, s=s, upp = mn + 2 * sqrt(s)))
+    
+}
+
+p <- c(0.2,0.1,0.7)
+
+makeProps <- function(d,sample) {
+  dd <- d[which(d$Sample==sample),c("Abundance","phylum")]
+  d3 <- dd %>% 
+    group_by(phylum) %>% 
+    summarise(occs = sum(Abundance)) %>% as.data.frame()
+  n <- sum(d3$occs)
+  p <- d3$occs/n
+  lowest <- p[which(p == min(p))]
+  p <- sort(c(p,lowest/2))
+  p <- p/sum(p)
+  return(p)
+}
+
+dff <- NULL
+for (s in 1:length(samples)) {
+  print(s)
+  c <- calcStats(sampleId = samples[s],p=makeProps(d=d,sample=samples[s]))
+  dff <- rbind(dff,data.frame(sample=samples[s],mn=c[["mn"]],s=c[["s"]],upp=c[["upp"]]))
+}
+#save.image(file='after_mc.rdata')
+load(file='after_mc.rdata')
+m <- merge(results,dff,by.x='Sample',by.y='sample')
+head(m)
+
+
+missed <- m[which(m$mn>m$sample_abundance),]
+nrow(missed)
+dd <- d[which(d$Sample==missed$Sample[1]),c("Abundance","phylum")]
+d3 <- dd %>% 
+  group_by(phylum) %>% 
+  summarise(occs = sum(Abundance)) %>% as.data.frame()
+d3
+
+#save.image(file='after_mc3.rdata')
+save(m,file='m.rdata')
+
+
+dd <- d[which(d$Sample==samples[1]),c("Abundance","phylum")]
+d3 <- dd %>% 
+  group_by(phylum) %>% 
+  summarise(occs = sum(Abundance)) %>% as.data.frame()
+d3
+
+# tf <- data.frame(a=1:10,b=1:10,c=1:10)
+# library(purrr)
+# pmap_dfr(tf, function(a, b, c) {
+#   data.frame(var1 = a + b * c,
+#              var2 = c/2) 
+# }  )

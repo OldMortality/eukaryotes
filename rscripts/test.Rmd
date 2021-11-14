@@ -1,0 +1,39 @@
+---
+title: "test"
+author: "Michel de Lange"
+date: "14/11/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+ 
+```{r cars}
+library(knitr)
+library(kableExtra)
+
+#load(file="after_loop.rdata")
+load("m.rdata")
+
+long_dt <- rbind(mtcars, mtcars)
+
+kable(
+      long_dt, 
+      format    = "latex", 
+      longtable = T, 
+      booktabs  = T, 
+      caption   = "Longtable"
+      ) %>%
+add_header_above(c(" ", "Group 1" = 5, "Group 2" = 6)) %>%
+kable_styling(latex_options = c("repeat_header"),
+              repeat_header_continued = "\\textit{(Continued on Next Page...)}")
+
+
+```
+
+ 
